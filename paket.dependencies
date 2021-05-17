@@ -1,0 +1,7 @@
+frameworks: net5.0
+source https://api.nuget.org/v3/index.json
+
+github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fsi
+github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fs
+
+nuget FSharp.Core >= 5.0.1
