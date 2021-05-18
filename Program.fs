@@ -13,6 +13,8 @@ let genFsProject () : FsProject =
 
 type User = User of id : int * name : string
 
+type Message = Message of User * string
+
 let add x y = x + y
 """
     File.WriteAllText(srcFileName, srcFileContent)
@@ -58,16 +60,36 @@ let main _ =
             eprintfn "%A" <| errors
             exit 1
 
+    let unionCaseToString (unionCase : FSharpUnionCase) : string =
+        sprintf
+            "%s of %s"
+            unionCase.Name
+            (unionCase.UnionCaseFields
+            |> Seq.map (fun item ->
+                sprintf
+                    "%s : %s"
+                    item.Name
+                    (item.FieldType.Format FSharpDisplayContext.Empty))
+            |> String.concat " * ")
+
     wholeProjResults.AssemblySignature.Entities
     |> Seq.iter (fun x ->
         printfn "DisplayName: %s" x.DisplayName
 
-        printfn "NestedEntities:"
+        printfn "\nNestedEntities:"
         x.NestedEntities
         |> Seq.iter (fun y ->
-            printfn "    %A" y)
+            let unionCases = y.UnionCases
+            if not (Seq.isEmpty unionCases)
+                then
+                    printfn "    union %s:" y.CompiledName
+                    unionCases
+                    |> Seq.map unionCaseToString
+                    |> Seq.iter (fun item -> printfn "        %s" item)
+                else
+                    printfn "    %A" y)
 
-        printfn "MembersFunctionsAndValues:"
+        printfn "\nMembersFunctionsAndValues:"
         x.MembersFunctionsAndValues
         |> Seq.iter (fun y ->
             printfn "    %A" y))
