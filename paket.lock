@@ -2,3 +2,4 @@ RESTRICTION: == net50
 NUGET
   remote: https://api.nuget.org/v3/index.json
     FSharp.Core (5.0.1)
+    Lokad.ILPack (0.1.6)

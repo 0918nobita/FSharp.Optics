@@ -2,3 +2,4 @@ frameworks: net5.0
 source https://api.nuget.org/v3/index.json
 
 nuget FSharp.Core >= 5.0.1
+nuget Lokad.ILPack >= 0.1.6
