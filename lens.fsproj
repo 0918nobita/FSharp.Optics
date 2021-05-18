@@ -6,13 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fsi">
-      <Link>ProvidedTypes.fsi</Link>
-    </Compile>
-    <Compile Include="paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
-      <Link>ProvidedTypes.fs</Link>
-    </Compile>
-    <Compile Include="ExampleProvider.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

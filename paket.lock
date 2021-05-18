@@ -2,7 +2,3 @@ RESTRICTION: == net50
 NUGET
   remote: https://api.nuget.org/v3/index.json
     FSharp.Core (5.0.1)
-GITHUB
-  remote: fsprojects/FSharp.TypeProviders.SDK
-    src/ProvidedTypes.fs (377d56321ad062985ed5aa19f205c1c4f04ef328)
-    src/ProvidedTypes.fsi (377d56321ad062985ed5aa19f205c1c4f04ef328)
