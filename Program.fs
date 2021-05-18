@@ -9,7 +9,7 @@ type FsProject = FsProject of fsproj : string * src : string
 let genFsProject () : FsProject =
     let base1 = Path.GetTempFileName()
     let srcFileName = Path.ChangeExtension(base1, ".fs")
-    let srcFileContent = """module Program
+    let srcFileContent = """namespace Foo
 
 module Inner =
     let rec fact n = if n > 0 then n * (fact (n - 1)) else 1
@@ -18,12 +18,12 @@ type User = User of id : int * name : string
 
 type Message = Message of User * string
 
+namespace Bar
+
 type Color = { R : int; G : int; B : int }
 
-let add x y = x + y
-
-type Foo =
-    member this.Bar(s : string) = s + "!"
+type Hoge =
+    member this.Fuga(s : string) = s + "!"
 """
     File.WriteAllText(srcFileName, srcFileContent)
     let base2 = Path.GetTempFileName()
@@ -90,27 +90,21 @@ let main _ =
             |> String.concat " * ")
 
     wholeProjResults.AssemblySignature.Entities
-    |> Seq.iter (fun x ->
-        printfn "DisplayName: %s" x.DisplayName
+    |> Seq.iter (fun entity ->
+        match entity with
+        | FsModule ->
+            printfn "module %s" entity.CompiledName
+        | FsUnion ->
+            printfn "union %s" entity.CompiledName
+            entity.UnionCases
+            |> Seq.map unionCaseToString
+            |> Seq.iter (printfn "    %s")
+        | FsRecord ->
+            printfn "record %s" entity.CompiledName
+        | _ ->
+            printfn "type %s" entity.CompiledName
 
-        printfn "\nNestedEntities:"
-        x.NestedEntities
-        |> Seq.iter (fun y ->
-            match y with
-            | FsModule ->
-                printfn "    module %s" y.DisplayName
-            | FsUnion ->
-                printfn "    union %s:" y.DisplayName
-                y.UnionCases
-                |> Seq.map unionCaseToString
-                |> Seq.iter (printfn "        %s")
-            | FsRecord ->
-                printfn "    record %s" y.DisplayName
-            | _ ->
-                printfn "    type %s" y.DisplayName)
-
-        printfn "\nMembersFunctionsAndValues:"
-        x.MembersFunctionsAndValues
-        |> Seq.iter (fun y ->
-            printfn "    %A" y))
+        entity.MembersFunctionsAndValues
+        |> Seq.iter (printfn "    %A")
+        printfn "")
     0
