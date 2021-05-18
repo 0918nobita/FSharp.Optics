@@ -11,16 +11,33 @@ let genFsProject () : FsProject =
     let srcFileName = Path.ChangeExtension(base1, ".fs")
     let srcFileContent = """module Program
 
+module Inner =
+    let rec fact n = if n > 0 then n * (fact (n - 1)) else 1
+
 type User = User of id : int * name : string
 
 type Message = Message of User * string
 
+type Color = { R : int; G : int; B : int }
+
 let add x y = x + y
+
+type Foo =
+    member this.Bar(s : string) = s + "!"
 """
     File.WriteAllText(srcFileName, srcFileContent)
     let base2 = Path.GetTempFileName()
     let projFileName = Path.ChangeExtension(base2, ".fsproj")
     FsProject (projFileName, srcFileName)
+
+let (|FsModule|_|) (entity : FSharpEntity) =
+    if entity.IsFSharpModule then Some () else None
+
+let (|FsUnion|_|) (entity : FSharpEntity) =
+    if entity.IsFSharpUnion then Some () else None
+
+let (|FsRecord|_|) (entity : FSharpEntity) =
+    if entity.IsFSharpRecord then Some () else None
 
 [<EntryPoint>]
 let main _ =
@@ -79,15 +96,18 @@ let main _ =
         printfn "\nNestedEntities:"
         x.NestedEntities
         |> Seq.iter (fun y ->
-            let unionCases = y.UnionCases
-            if not (Seq.isEmpty unionCases)
-                then
-                    printfn "    union %s:" y.CompiledName
-                    unionCases
-                    |> Seq.map unionCaseToString
-                    |> Seq.iter (fun item -> printfn "        %s" item)
-                else
-                    printfn "    %A" y)
+            match y with
+            | FsModule ->
+                printfn "    module %s" y.DisplayName
+            | FsUnion ->
+                printfn "    union %s:" y.DisplayName
+                y.UnionCases
+                |> Seq.map unionCaseToString
+                |> Seq.iter (printfn "        %s")
+            | FsRecord ->
+                printfn "    record %s" y.DisplayName
+            | _ ->
+                printfn "    type %s" y.DisplayName)
 
         printfn "\nMembersFunctionsAndValues:"
         x.MembersFunctionsAndValues
