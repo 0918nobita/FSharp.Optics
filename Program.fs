@@ -62,7 +62,7 @@ let main _ =
     |> Seq.iter (fun x ->
         printfn "DisplayName: %s" x.DisplayName
 
-        printfn "NestedEntries:"
+        printfn "NestedEntities:"
         x.NestedEntities
         |> Seq.iter (fun y ->
             printfn "    %A" y)
