@@ -29,21 +29,22 @@ let main _ =
     let projOptions =
         let runtimeDir = Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory()
         let baseDir = AppContext.BaseDirectory
+        let lib name = Path.Combine(runtimeDir, name)
         checker.GetProjectOptionsFromCommandLineArgs(
             fsproj,
             [|
                 "--noframework"
                 "--target:library"
                 src
-                "-r:" + Path.Combine(runtimeDir, "mscorlib.dll")
-                "-r:" + Path.Combine(runtimeDir, "System.dll")
-                "-r:" + Path.Combine(runtimeDir, "System.Collections.dll")
-                "-r:" + Path.Combine(runtimeDir, "System.Core.dll")
-                "-r:" + Path.Combine(runtimeDir, "System.Net.Requests.dll")
-                "-r:" + Path.Combine(runtimeDir, "System.Net.WebClient.dll")
-                "-r:" + Path.Combine(runtimeDir, "System.Private.CoreLib.dll")
-                "-r:" + Path.Combine(runtimeDir, "System.Runtime.dll")
-                "-r:" + Path.Combine(runtimeDir, "System.Runtime.Numerics.dll")
+                "-r:" + lib "mscorlib.dll"
+                "-r:" + lib "System.dll"
+                "-r:" + lib "System.Collections.dll"
+                "-r:" + lib "System.Core.dll"
+                "-r:" + lib "System.Net.Requests.dll"
+                "-r:" + lib "System.Net.WebClient.dll"
+                "-r:" + lib "System.Private.CoreLib.dll"
+                "-r:" + lib "System.Runtime.dll"
+                "-r:" + lib "System.Runtime.Numerics.dll"
                 "-r:" + Path.Combine(baseDir, "FSharp.Core.dll")
             |])
 
