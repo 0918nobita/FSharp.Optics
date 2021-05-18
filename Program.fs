@@ -39,6 +39,14 @@ let (|FsUnion|_|) (entity : FSharpEntity) =
 let (|FsRecord|_|) (entity : FSharpEntity) =
     if entity.IsFSharpRecord then Some () else None
 
+let inline glue<'t> : 't =
+    try failwith "glue code"
+    with ex -> raise ex
+
+type DerivedLens<'s, 'a> =
+    member _.Get : 's -> 'a = glue
+    member _.Set : 's -> 'a -> 's = glue
+
 [<EntryPoint>]
 let main _ =
     let (FsProject (fsproj, src)) = genFsProject ()
