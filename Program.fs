@@ -1,144 +1,44 @@
 module Program
 
 open System
-open System.IO
-open System.Reflection
-open System.Reflection.Emit
-open FSharp.Compiler.SourceCodeServices
+open FSharp.Reflection
 
-type FsProject = FsProject of fsproj : string * src : string
-
-let genFsProject () : FsProject =
-    let base1 = Path.GetTempFileName()
-    let srcFileName = Path.ChangeExtension(base1, ".fs")
-    let srcFileContent = """namespace Foo
-
-module Inner =
-    let rec fact n = if n > 0 then n * (fact (n - 1)) else 1
-
-type User = User of id : int * name : string
-
-type Message = Message of User * string
-
-namespace Bar
-
-type Color = { R : int; G : int; B : int }
-
-type Hoge =
-    member this.Fuga(s : string) = s + "!"
-"""
-    File.WriteAllText(srcFileName, srcFileContent)
-    let base2 = Path.GetTempFileName()
-    let projFileName = Path.ChangeExtension(base2, ".fsproj")
-    FsProject (projFileName, srcFileName)
-
-let (|FsModule|_|) (entity : FSharpEntity) =
-    if entity.IsFSharpModule then Some () else None
-
-let (|FsUnion|_|) (entity : FSharpEntity) =
-    if entity.IsFSharpUnion then Some () else None
-
-let (|FsRecord|_|) (entity : FSharpEntity) =
-    if entity.IsFSharpRecord then Some () else None
-
-let inline glue<'t> : 't =
+let glue<'t> : 't =
     try failwith "glue code"
     with ex -> raise ex
+
+type User = User of id : int * name : string
 
 type DerivedLens<'s, 'a> =
     member _.Get : 's -> 'a = glue
     member _.Set : 's -> 'a -> 's = glue
 
+type S<'n> = S of 'n
+type Z     = Z
+
+type S<'n> with
+    static member inline (+^) (S x, y) = S (x +^ y)
+
+type Z with
+    static member inline (+^) (Z, y) = y
+
+type CSharpFunc =
+    static member ToFSharpFunc<'a, 'b>(func : Func<'a, 'b>) : 'a -> 'b = fun a -> func.Invoke(a)
+
 [<EntryPoint>]
 let main _ =
-    let (FsProject (fsproj, src)) = genFsProject ()
+    let userType = typeof<User>
+    let unionCase = Array.head <| FSharpType.GetUnionCases userType
+    let field = Array.head <| unionCase.GetFields()
+    let method = userType.GetProperty(field.Name).GetGetMethod()
+    let func =
+        Delegate.CreateDelegate(
+            typeof<Func<User, int>>,
+            method
+        ) :?> Func<User, int>
+        |> CSharpFunc.ToFSharpFunc
 
-    let checker = FSharpChecker.Create()
-
-    let projOptions =
-        let runtimeDir = Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory()
-        let baseDir = AppContext.BaseDirectory
-        let lib name = Path.Combine(runtimeDir, name)
-        checker.GetProjectOptionsFromCommandLineArgs(
-            fsproj,
-            [|
-                "--noframework"
-                "--target:library"
-                src
-                "-r:" + lib "mscorlib.dll"
-                "-r:" + lib "System.dll"
-                "-r:" + lib "System.Collections.dll"
-                "-r:" + lib "System.Core.dll"
-                "-r:" + lib "System.Net.Requests.dll"
-                "-r:" + lib "System.Net.WebClient.dll"
-                "-r:" + lib "System.Private.CoreLib.dll"
-                "-r:" + lib "System.Runtime.dll"
-                "-r:" + lib "System.Runtime.Numerics.dll"
-                "-r:" + Path.Combine(baseDir, "FSharp.Core.dll")
-            |])
-
-    let wholeProjResults =
-        checker.ParseAndCheckProject(projOptions)
-        |> Async.RunSynchronously
-
-    let errors = wholeProjResults.Errors
-    if not (Array.isEmpty errors)
-        then
-            eprintfn "%A" <| errors
-            exit 1
-
-    let unionCaseToString (unionCase : FSharpUnionCase) : string =
-        sprintf
-            "%s of %s"
-            unionCase.Name
-            (unionCase.UnionCaseFields
-            |> Seq.map (fun item ->
-                sprintf
-                    "%s : %s"
-                    item.Name
-                    (item.FieldType.Format FSharpDisplayContext.Empty))
-            |> String.concat " * ")
-
-    wholeProjResults.AssemblySignature.Entities
-    |> Seq.iter (fun entity ->
-        match entity with
-        | FsModule ->
-            printfn "module %s" entity.CompiledName
-        | FsUnion ->
-            printfn "union %s" entity.CompiledName
-            entity.UnionCases
-            |> Seq.map unionCaseToString
-            |> Seq.iter (printfn "    %s")
-        | FsRecord ->
-            printfn "record %s" entity.CompiledName
-        | _ ->
-            printfn "type %s" entity.CompiledName
-
-        entity.MembersFunctionsAndValues
-        |> Seq.iter (printfn "    %A")
-        printfn "")
-
-    let asmName = AssemblyName("DynAsm")
-    let asmBuilder = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.RunAndCollect)
-    let modBuilder = asmBuilder.DefineDynamicModule(asmName.Name)
-    let typeBuilder = modBuilder.DefineType("DynamicType", TypeAttributes.Public)
-    let intType = typeof<int>
-    let methodBuilder =
-        typeBuilder.DefineMethod(
-            "addFunc",
-            MethodAttributes.Public ||| MethodAttributes.Static,
-            returnType = intType,
-            parameterTypes = [| intType; intType |]
-        )
-
-    let ilGen = methodBuilder.GetILGenerator()
-    ilGen.Emit OpCodes.Ldarg_0
-    ilGen.Emit OpCodes.Ldarg_1
-    ilGen.Emit OpCodes.Add
-    ilGen.Emit OpCodes.Ret
-
-    ignore <| typeBuilder.CreateType()
-
-    let asmGen = Lokad.ILPack.AssemblyGenerator()
-    asmGen.GenerateAssembly(asmBuilder, asmName.Name + ".dll")
+    let user = User (21, "Alice")
+    for _ in 1..10 do
+        printfn "%d" <| func user
     0
